@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "name": "Slapback Twang - #1",
+  "skin": "walnut",
+  "pedals": [
+    {
+      "type": "tuner",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "ref": 440.0,
+        "mode": 0
+      }
+    },
+    {
+      "type": "compressor",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "sustain": 0.55,
+        "attack": 20.0,
+        "level": 0.0
+      }
+    },
+    {
+      "type": "tremolo",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "rate": 8.42756881748047,
+        "depth": 0.5,
+        "shape": 2
+      }
+    },
+    {
+      "type": "delay",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "time": 51.084384924462306,
+        "feedback": 0.1479411764705883,
+        "mix": 0.7352941176470589,
+        "tone": 0.5,
+        "mode": 1
+      }
+    },
+    {
+      "type": "chorus",
+      "enabled": false,
+      "finish": null,
+      "params": {
+        "rate": 3.2672618967277214,
+        "depth": 0.5,
+        "mix": 0.5
+      }
+    },
+    {
+      "type": "reverb",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "size": 0.3,
+        "tone": 0.5,
+        "mix": 0.15,
+        "predelay": 10.0
+      }
+    },
+    {
+      "type": "phaser",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "rate": 0.5,
+        "depth": 0.7,
+        "feedback": 0.35,
+        "mix": 0.5
+      }
+    },
+    {
+      "type": "boost",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "gain": 14.047058823529412,
+        "bass": 0.0,
+        "treble": 0.0
+      }
+    },
+    {
+      "type": "console",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "tilt": 0.0,
+        "rate": 1.0,
+        "time": 0.35,
+        "mix": 1.0,
+        "char_amt": 0.5,
+        "move_amt": 0.5,
+        "diff_amt": 0.4,
+        "text_amt": 0.5,
+        "char_fx": 2,
+        "move_fx": 2,
+        "diff_fx": 1,
+        "text_fx": 0,
+        "level": 0.0
+      },
+      "order": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "console_preset": "Custom"
+    },
+    {
+      "type": "looper",
+      "enabled": true,
+      "finish": null,
+      "params": {
+        "tempo": 120.47058823529412,
+        "drum_level": 0.6,
+        "level1": 0.23999999999999957,
+        "level2": 0.0,
+        "measures": 0,
+        "start": 1,
+        "after": 0,
+        "fill": 1,
+        "style": 4,
+        "kit": 0,
+        "drums": 1
+      }
+    }
+  ]
+}

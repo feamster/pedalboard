@@ -38,6 +38,7 @@ class Knob(QWidget):
         self.formatter = formatter  # norm -> display string
         self._drag = None
         self._hover = False
+        self.focused = False     # the knob the up/down keys are adjusting
         self.setFixedSize(diameter + 30, diameter + 34)
         self.setCursor(Qt.CursorShape.SizeVerCursor)
         self.setMouseTracking(True)
@@ -151,8 +152,14 @@ class Knob(QWidget):
         p.setPen(QPen(pointer, max(2.2, r * 0.11), Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         p.drawLine(c + d * (r * 0.28), c + d * (r * 0.9))
 
-        active = self._drag is not None or self._hover
+        active = self._drag is not None or self._hover or self.focused
         text = self.formatter(self.norm) if (active and self.formatter) else self.label.upper()
+        if self.focused:   # a thin ring in the pedal's own lettering colour
+            ring = QColor(self.text_color)
+            ring.setAlpha(200)
+            p.setPen(QPen(ring, 1.3))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawEllipse(c, r + 3.0, r + 3.0)
         p.setPen(self.text_color)
         p.setFont(font(10, bold=True, spacing=0.0 if active else 0.6))
         p.drawText(QRectF(-10, 9 + self.diameter + 7, self.width() + 20, 15),

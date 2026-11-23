@@ -31,6 +31,8 @@ class PedalWidget(QWidget):
         self.controls: dict = {}
         self._face: QPixmap | None = None
         self._face_key = None
+        self.selected = False      # keyboard focus is on this pedal
+        self.knob_index = 0        # which of its knobs the up/down keys turn
         self.setFixedSize(self.BODY_W + 2 * PAD_X, BODY_H + PAD_TOP + PAD_BOTTOM)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.foot = FootSwitch(self)
@@ -92,6 +94,7 @@ class PedalWidget(QWidget):
         self._build()
         for widget in self.controls.values():
             widget.show()
+        self._show_knob_focus()
         self.update()
 
     def refresh(self) -> None:
@@ -103,6 +106,40 @@ class PedalWidget(QWidget):
             elif widget is not None:
                 widget.set_index(int(self.pedal.get(param.key)))
         self.update()
+
+    # -- keyboard / foot control --------------------------------------
+    def knobs(self) -> list:
+        return [w for w in self.controls.values() if isinstance(w, Knob)]
+
+    def set_selected(self, selected: bool) -> None:
+        self.selected = selected
+        self._show_knob_focus()
+
+    def _show_knob_focus(self) -> None:
+        knobs = self.knobs()
+        self.knob_index = min(self.knob_index, max(0, len(knobs) - 1))
+        for i, knob in enumerate(knobs):
+            focused = self.selected and i == self.knob_index
+            if knob.focused != focused:
+                knob.focused = focused
+                knob.update()
+
+    def cycle_knob(self, step: int = 1) -> None:
+        knobs = self.knobs()
+        if knobs:
+            self.knob_index = (self.knob_index + step) % len(knobs)
+            self._show_knob_focus()
+
+    def nudge(self, direction: int) -> None:
+        """Turn the focused knob one notch (2% of its travel)."""
+        knobs = self.knobs()
+        if knobs:
+            knob = knobs[self.knob_index]
+            knob.set_norm(knob.norm + 0.02 * direction, emit=True)
+
+    def main_switch(self) -> None:
+        """What Space / a footswitch does to this pedal."""
+        self.toggle()
 
     def shutdown(self) -> None:
         """Stop any timers; called when the pedal leaves the board."""
@@ -619,9 +656,15 @@ class LooperWidget(PedalWidget):
         if self.pedal.command(command) and command == "drums":
             self.edited.emit()
 
-    def nudge_tempo(self, delta: float) -> None:
-        self._set("tempo", round(self.pedal.get("tempo")) + delta)
-        self.refresh()
+    def nudge(self, direction: int) -> None:
+        if self.knobs()[self.knob_index] is self.controls["tempo"]:
+            self._set("tempo", round(self.pedal.get("tempo")) + direction)   # exactly 1 bpm
+            self.refresh()
+        else:
+            super().nudge(direction)
+
+    def main_switch(self) -> None:
+        self.send("press")
 
     def _refresh_display(self) -> None:
         if self.pedal.ui_dirty:     # the audio thread changed a value (tempo, rhythm on/off)

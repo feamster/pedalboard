@@ -158,6 +158,7 @@ class MainWindow(QMainWindow):
         self.board = BoardView(lambda: self.engine.sr)
         self.board.chain_changed.connect(lambda: self.engine.set_chain(self.board.pedals()))
         self.board.edited.connect(self._mark_edited)
+        self.board.selection_changed.connect(self._show_selected)
 
         central = QWidget()
         column = QVBoxLayout(central)
@@ -173,7 +174,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         QShortcut(QKeySequence.StandardKey.Save, self, activated=self._save)
-        self._space_down = False
+        self._switch_down = False
         self._hold = QTimer(self)          # Space held down -> looper undo/redo
         self._hold.setSingleShot(True)
         self._hold.setInterval(900)
@@ -299,8 +300,8 @@ class MainWindow(QMainWindow):
         column = QVBoxLayout(shelf)
         column.setContentsMargins(0, 6, 0, 2)
         column.setSpacing(0)
-        hint = _caption("PEDAL SHELF  ·  DRAG ONTO THE BOARD OR DOUBLE-CLICK  ·  DRAG A PEDAL OFF THE BOARD "
-                        "(OR RIGHT-CLICK) TO REMOVE")
+        hint = _caption("DRAG PEDALS ONTO THE BOARD  ·  ← → SELECT A PEDAL  ·  SPACE = ITS FOOTSWITCH  ·  "
+                        "↑ ↓ TURN THE LIT KNOB  ·  TAB = NEXT KNOB")
         hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         column.addWidget(hint)
         column.addWidget(PedalBrowser(self.board))
@@ -336,36 +337,53 @@ class MainWindow(QMainWindow):
         return not (event.modifiers() & blocked)
 
     def handle_key(self, key, down: bool, repeat: bool = False) -> bool:
-        """Space is the looper's main switch (or engine power); letters are its other controls."""
+        """Keyboard / foot-controller control.
+
+        Left/Right pick a pedal, Space is that pedal's footswitch (on a looper:
+        record/play/overdub), Up/Down turn its highlighted knob and Tab picks
+        the knob. Return is always the looper's main switch, and the looper's
+        letter keys work whatever is selected.
+        """
         looper = self.looper()
-        if key == Qt.Key.Key_Space:
+        selected = self.board.selected
+        if key in (Qt.Key.Key_Space, Qt.Key.Key_Return, Qt.Key.Key_Enter):
             if repeat:
                 return True
-            self._space_down = down
+            target = looper if key != Qt.Key.Key_Space else selected
+            self._switch_down = down
             if not down:
                 self._hold.stop()
             elif not self.engine.running:
                 self._power(True)
-            elif looper is None:
-                self._power(False)
-            else:
-                looper.send("press")
-                self._hold.start()
+            elif target is not None:
+                target.main_switch()
+                if target is looper:
+                    self._hold.start()
             return True
-        if looper is None or not down:
+        if not down:
             return False
-        if key in self.LOOPER_KEYS:
+        if key in (Qt.Key.Key_Left, Qt.Key.Key_Right):
+            self.board.select_step(1 if key == Qt.Key.Key_Right else -1)
+            return True
+        if key in (Qt.Key.Key_Up, Qt.Key.Key_Down) and selected is not None:
+            selected.nudge(1 if key == Qt.Key.Key_Up else -1)
+            return True
+        if key in (Qt.Key.Key_Tab, Qt.Key.Key_Backtab) and selected is not None:
+            selected.cycle_knob(1 if key == Qt.Key.Key_Tab else -1)
+            return True
+        if looper is not None and key in self.LOOPER_KEYS:
             if not repeat:
                 looper.send(self.LOOPER_KEYS[key])
             return True
-        if key in (Qt.Key.Key_Up, Qt.Key.Key_Down):
-            looper.nudge_tempo(1 if key == Qt.Key.Key_Up else -1)
-            return True
         return False
+
+    def _show_selected(self) -> None:
+        if self.board.selected is not None:
+            self.scroll.ensureWidgetVisible(self.board.selected, 60, 0)
 
     def _space_held(self) -> None:
         looper = self.looper()
-        if self._space_down and looper is not None:
+        if self._switch_down and looper is not None:
             looper.send("hold")
 
     # -- presets ------------------------------------------------------

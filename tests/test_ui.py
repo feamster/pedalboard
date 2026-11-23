@@ -232,16 +232,84 @@ def test_tuner_display_follows_the_engine(window, app):
     tuner.grab()                                     # paints without error
 
 
-def test_space_powers_the_engine_when_there_is_no_looper(window, monkeypatch):
+def test_space_starts_the_engine_then_works_the_selected_pedal(window, monkeypatch):
     calls = []
     monkeypatch.setattr(window, "_power", lambda on: calls.append(on))
-    assert window.looper() is None
+    tuner = window.board.widgets[0]
+    assert window.looper() is None and window.board.selected is tuner
     assert window.handle_key(Qt.Key.Key_Space, True)
+    assert calls == [True] and tuner.pedal.enabled        # engine was off: Space only starts it
     window.engine._stream = FakeStream()
     window.handle_key(Qt.Key.Key_Space, False)
     window.handle_key(Qt.Key.Key_Space, True)
-    assert calls == [True, False]
-    assert not window.handle_key(Qt.Key.Key_S, True)  # letters are left alone without a looper
+    window.handle_key(Qt.Key.Key_Space, True, repeat=True)
+    assert calls == [True] and not tuner.pedal.enabled    # now it is the pedal's footswitch
+    assert not window.handle_key(Qt.Key.Key_S, True)      # looper letters do nothing without one
+    window.engine._stream = None
+
+
+def test_arrow_keys_walk_the_board_and_turn_knobs(window, app):
+    board = window.board
+    window.engine._stream = FakeStream()
+    order = types(window)
+    assert board.selected is board.widgets[0]
+    window.handle_key(Qt.Key.Key_Left, True)                    # wraps to the far end
+    assert board.selected is board.widgets[-1]
+    window.handle_key(Qt.Key.Key_Right, True)
+    window.handle_key(Qt.Key.Key_Right, True)
+    window.handle_key(Qt.Key.Key_Right, True)
+    dist = board.selected
+    assert dist.pedal.TYPE == "distortion" and dist.selected and not board.widgets[0].selected
+    assert dist.pedal.enabled is False
+    window.handle_key(Qt.Key.Key_Space, True)                   # stomp it on
+    window.handle_key(Qt.Key.Key_Space, False)
+    assert dist.pedal.enabled is True
+
+    drive, tone = dist.controls["drive"], dist.controls["tone"]
+    assert drive.focused and not tone.focused
+    before = dist.pedal.get("drive")
+    for _ in range(5):
+        window.handle_key(Qt.Key.Key_Up, True, repeat=True)     # holding the key keeps turning
+    assert dist.pedal.get("drive") == pytest.approx(before + 0.10)
+    window.handle_key(Qt.Key.Key_Tab, True)
+    assert tone.focused and not drive.focused
+    window.handle_key(Qt.Key.Key_Down, True)
+    assert dist.pedal.get("tone") == pytest.approx(0.53)
+    assert dist.pedal.get("drive") == pytest.approx(before + 0.10)
+    window.handle_key(Qt.Key.Key_Backtab, True)
+    assert drive.focused
+    window.handle_key(Qt.Key.Key_Right, True)
+    assert not drive.focused and types(window) == order         # selection never reorders
+    board.grab()                                                # selection ring paints
+
+    QTest.mousePress(dist, Qt.MouseButton.LeftButton, pos=QPoint(dist.width() // 2, 290))
+    QTest.mouseRelease(dist, Qt.MouseButton.LeftButton, pos=QPoint(dist.width() // 2, 290))
+    assert board.selected is dist                               # clicking a pedal selects it
+    neighbour = board.widgets[board.widgets.index(dist) + 1]
+    board.remove(dist)
+    assert board.selected is neighbour and neighbour.selected
+    window.engine._stream = None
+
+
+def test_return_is_always_the_looper(window, app):
+    window._load_preset("Looper Rig")
+    looper = window.looper()
+    assert window.board.selected is looper                      # boards with a looper start on it
+    looper.pedal.set("start", 0)
+    window.engine._stream = FakeStream()
+    pump(window)
+    window.handle_key(Qt.Key.Key_Left, True)                    # move to the reverb
+    reverb = window.board.selected
+    assert reverb.pedal.TYPE == "reverb"
+    window.handle_key(Qt.Key.Key_Return, True)
+    window.handle_key(Qt.Key.Key_Return, False)
+    pump(window)
+    assert looper.pedal.state == "rec" and reverb.pedal.enabled
+    window.handle_key(Qt.Key.Key_Space, True)                   # Space still belongs to the reverb
+    window.handle_key(Qt.Key.Key_Space, False)
+    pump(window)
+    assert not reverb.pedal.enabled and looper.pedal.state == "rec"
+    window.handle_key(Qt.Key.Key_Escape, True)
     window.engine._stream = None
 
 
@@ -288,7 +356,7 @@ def test_keyboard_drives_the_looper(window, app):
     assert looper.get("tempo") == 97 and widget.controls["tempo"].norm == pytest.approx(57 / 200)
 
     key(Qt.Key.Key_Space, hold=True)                 # holding Space asks for undo
-    assert window._hold.isActive() and window._space_down
+    assert window._hold.isActive() and window._switch_down
     window._space_held()
     window.handle_key(Qt.Key.Key_Space, False)
     assert not window._hold.isActive()

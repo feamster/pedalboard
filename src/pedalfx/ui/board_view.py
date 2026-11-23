@@ -35,6 +35,7 @@ MAX_PEDALS = 12
 
 class BoardView(QWidget):
     chain_changed = pyqtSignal()   # pedals added / removed / reordered
+    selection_changed = pyqtSignal()
     edited = pyqtSignal()          # anything at all changed
 
     def __init__(self, sample_rate_getter, parent=None):
@@ -45,6 +46,7 @@ class BoardView(QWidget):
         self._anims: dict = {}
         self._drag = None          # (widget, grab offset, started?)
         self._insert_at = None     # browser drop indicator index
+        self.selected = None       # the pedal the keyboard / footswitches act on
         self.setAcceptDrops(True)
         self.setMinimumHeight(BODY_H + PAD_TOP + PAD_BOTTOM + 44)
         self.chain_changed.connect(self.edited)
@@ -59,10 +61,36 @@ class BoardView(QWidget):
             w.setParent(None)
             w.deleteLater()
         self.widgets = []
+        self.selected = None
         for pedal in pedals:
             self._attach(pedal, len(self.widgets))
         self.relayout(animate=False)
         self.chain_changed.emit()
+        # start on the looper if there is one, so Space keeps meaning "loop"
+        self.select(next((w for w in self.widgets if w.pedal.TYPE == "looper"),
+                         self.widgets[0] if self.widgets else None))
+
+    # -- selection ------------------------------------------------------
+    def select(self, widget) -> None:
+        if widget is self.selected:
+            return
+        if self.selected is not None and self.selected in self.widgets:
+            self.selected.set_selected(False)
+        self.selected = widget
+        if widget is not None:
+            widget.set_selected(True)
+        self.update()
+        self.selection_changed.emit()
+
+    def select_step(self, step: int) -> None:
+        """Move the selection left / right along the chain, wrapping at the ends."""
+        if not self.widgets:
+            return
+        if self.selected in self.widgets:
+            index = (self.widgets.index(self.selected) + step) % len(self.widgets)
+        else:
+            index = 0
+        self.select(self.widgets[index])
 
     def shutdown(self) -> None:
         for w in self.widgets:
@@ -86,6 +114,8 @@ class BoardView(QWidget):
         index = len(self.widgets) if index is None else max(0, min(index, len(self.widgets)))
         pedal = pedal_from_dict(data, self._sr()) if data else create_pedal(type_name, self._sr())
         widget = self._attach(pedal, index)
+        if self.selected is None:
+            self.select(widget)
         slots = self._slots()
         widget.move(slots[index].x(), slots[index].y() - 46)  # drops in from above
         self.relayout()
@@ -94,7 +124,11 @@ class BoardView(QWidget):
 
     def remove(self, widget) -> None:
         if widget in self.widgets:
+            index = self.widgets.index(widget)
             self.widgets.remove(widget)
+            if widget is self.selected:   # hand the selection to a neighbour
+                self.selected = None
+                self.select(self.widgets[min(index, len(self.widgets) - 1)] if self.widgets else None)
             self._anims.pop(widget, None)
             widget.shutdown()
             widget.setParent(None)
@@ -154,6 +188,7 @@ class BoardView(QWidget):
     # -- drag to reorder (driven by PedalWidget mouse events) --------
     def begin_drag(self, widget, global_pos: QPointF) -> None:
         self._drag = [widget, widget.mapFromGlobal(global_pos.toPoint()), False]
+        self.select(widget)
 
     def drag_to(self, widget, global_pos: QPointF) -> None:
         if not self._drag or self._drag[0] is not widget:
@@ -273,6 +308,17 @@ class BoardView(QWidget):
         light.setColorAt(1.0, QColor(0, 0, 0, 150))
         p.fillRect(self.rect(), light)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        sel = self.selected
+        if sel is not None and sel in self.widgets:
+            # quiet marker: a hairline outline and a small lamp on the floor below the pedal
+            ring = QRectF(sel.x() + PAD_X, sel.y() + PAD_TOP, sel.width() - 2 * PAD_X, BODY_H)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.setPen(QPen(QColor(255, 255, 255, 120), 1.2))
+            p.drawRoundedRect(ring.adjusted(-4, -4, 4, 4), 17, 17)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(255, 255, 255, 200))
+            p.drawRoundedRect(QRectF(ring.center().x() - 14, ring.bottom() + 12, 28, 3), 1.5, 1.5)
 
         if not self.widgets:
             p.setPen(QColor(255, 255, 255, 150))

@@ -33,6 +33,7 @@ immediately, `--screenshot out.png` renders the window to a file and exits.
 | Remove a pedal | Drag it off the board (up or down) and let go, or right-click → Remove |
 | Switch a pedal on/off | Click its footswitch (the LED shows the state) |
 | Turn a knob | Drag up/down. Shift-drag for fine control, scroll wheel to nudge, double-click to reset |
+| Work it without the mouse | See *Keyboard and foot control* below |
 | See a knob's value | Hover over it — the label becomes the value |
 | Duplicate / recolour / reset | Right-click the pedal (12 finishes to choose from) |
 | Change the floor | **Board Skin**: Walnut, Tolex, Aluminum or Stage |
@@ -40,6 +41,22 @@ immediately, `--screenshot out.png` renders the window to a file and exits.
 | Play a recording through it | Input source → **Audio File…** (wav, aiff, flac, mp3, ogg; loops) |
 
 The board, knob positions, skin and audio settings are restored the next time you open the app.
+
+## Keyboard and foot control
+
+One pedal is always selected (thin outline, with a small bar beneath it). These keys are all a foot controller needs to send:
+
+| Key | Does |
+|---|---|
+| **← / →** | Select the previous / next pedal (wraps round, so one switch is enough) |
+| **Space** | The selected pedal's footswitch: on/off — or record/play/overdub on the looper. With the engine off, it starts the engine |
+| **↑ / ↓** | Turn the selected pedal's highlighted knob (hold to keep turning) |
+| **Tab / Shift-Tab** | Highlight the next / previous knob |
+| **Return** | The looper's main switch, whichever pedal is selected |
+
+Clicking a pedal selects it too. Boards with a looper start with the looper selected. The looper's
+letter keys (below) work regardless of the selection. Any programmable USB or Bluetooth foot pedal
+that types keys will do; a four-switch one covering Space, →, T and S handles most of a set.
 
 ## The pedals
 
@@ -92,7 +109,7 @@ It controls the first looper on the board; the "Looper Rig" preset has one ready
 
 | Key | Does |
 |---|---|
-| **Space** | The main switch: record → overdub → play → overdub… Tap twice quickly to stop |
+| **Space** or **Return** | The main switch: record → overdub → play → overdub… Tap twice quickly to stop. (Space needs the looper selected; Return always works) |
 | **Space (hold)** | Undo the last overdub; hold again to redo |
 | **S** | Stop the selected track — at once, or at the end of the loop (the **Stop** setting). Press S, T, S to queue both tracks to end together. S again on a waiting track stops it now; Space cancels |
 | **Esc** | Stop everything immediately |
@@ -102,7 +119,7 @@ It controls the first looper on the board; the "Looper Rig" preset has one ready
 | **R** | Drums on/off (with nothing playing, they start on their own so you can hear the tempo) |
 | **F** | Drum fill for the rest of this measure |
 | **N** | Fill, then switch between the style's A and B parts (with a crash) |
-| **↑ / ↓** | Tempo ± 1 bpm (before a loop is recorded) |
+| **↑ / ↓** | With the looper selected: tempo ± 1 bpm (before a loop is recorded) |
 
 Settings on the pedal — click the right half of a field for next, the left half for previous:
 
