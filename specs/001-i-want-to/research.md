@@ -1,3 +1,5 @@
+> **Historical.** This describes the original v1 implementation, which was replaced by the v2 rewrite in November 2026. For the current app see the top-level [README](../../README.md) and [docs/](../../docs/).
+
 # Research Findings: Guitar Pedalboard Effects Chain
 
 ## Audio Latency Requirements

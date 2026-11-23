@@ -1,3 +1,5 @@
+> **Historical.** This describes the original v1 implementation, which was replaced by the v2 rewrite in November 2026. For the current app see the top-level [README](../../README.md) and [docs/](../../docs/).
+
 # Implementation Plan: Guitar Pedalboard Effects Chain
 
 **Branch**: `001-i-want-to` | **Date**: 2025-09-15 | **Spec**: [spec.md](./spec.md)
