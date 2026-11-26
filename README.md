@@ -13,6 +13,13 @@ pip install -r requirements.txt
 python src/main.py
 ```
 
+To start it from anywhere by typing `pedalboard`, link the launcher onto your PATH once
+(it builds its own virtualenv on first run):
+
+```bash
+ln -sf "$(pwd)/bin/pedalboard" ~/.local/bin/pedalboard
+```
+
 Then press the **power button** (or Space, while the engine is off). The input source starts on **Demo Riff** — a built-in
 looping clean guitar part — so you can hear every pedal before plugging anything in.
 
@@ -195,4 +202,4 @@ Setting the `PEDALFX_HOME` environment variable moves both into that folder inst
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).

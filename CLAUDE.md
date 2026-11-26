@@ -1,8 +1,10 @@
-# pedalboard-effects Development Guidelines
+# pedalboard Development Guidelines
 
 Real-time guitar pedalboard: PyQt6 UI (custom painted, drag-and-drop) over a numpy +
 Spotify-pedalboard DSP chain. Rewritten as v2 in November 2026; `specs/001-i-want-to/` describes
 the original v1 and is historical.
+**`SPEC.md` is the living spec** (including the interface `../synth-rack` depends on); update it
+when behaviour changes.
 
 ## Technologies
 - Python 3.11+, PyQt6, pedalboard (Spotify), sounddevice, numpy. No scipy.
@@ -21,7 +23,7 @@ docs/                  EFFECTS.md, ARCHITECTURE.md
 ## Commands
 ```
 pytest && ruff check .          # from the repo root
-python src/main.py              # run the app
+python src/main.py              # run the app (or `pedalboard`, via bin/pedalboard on PATH)
 python src/main.py --screenshot out.png   # render the UI without audio
 ```
 
