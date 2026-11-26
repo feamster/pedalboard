@@ -20,6 +20,9 @@ To start it from anywhere by typing `pedalboard`, link the launcher onto your PA
 ln -sf "$(pwd)/bin/pedalboard" ~/.local/bin/pedalboard
 ```
 
+The window opens and the terminal prompt comes straight back; anything the app prints goes to
+`~/.pedalboard/last-run.log`. `pedalboard --fg` keeps it attached to the terminal instead.
+
 Then press the **power button** (or Space, while the engine is off). The input source starts on **Demo Riff** — a built-in
 looping clean guitar part — so you can hear every pedal before plugging anything in.
 
