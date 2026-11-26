@@ -33,6 +33,6 @@ python src/main.py --screenshot out.png   # render the UI without audio
 - A new pedal = a `Pedal` subclass plus an entry in `PEDAL_CLASSES` (see docs/ARCHITECTURE.md).
 - The UI thread only writes `pedal.values` / `pedal.enabled`; replace `engine.chain`, never mutate it.
 - Set `PEDALFX_HOME` to a temp dir when running the app from scripts so the user's saved
-  session in `~/.pedalboard-effects` is not touched. Tests already use `tmp_path`.
+  session in `~/.pedalboard` is not touched. Tests already use `tmp_path`.
 - Opening a real audio stream in a script makes sound: use the "BlackHole 2ch" device or
   `engine.master_db = -90`.

@@ -16,8 +16,31 @@ REPO_BOARDS = Path(__file__).resolve().parents[2] / "boards"
 
 
 def app_dir() -> Path:
-    """Per-machine state (the session file): ``~/.pedalboard-effects``."""
-    return Path(os.environ.get("PEDALFX_HOME", Path.home() / ".pedalboard-effects"))
+    """Per-machine state (the session file): ``~/.pedalboard``."""
+    return Path(os.environ.get("PEDALFX_HOME", Path.home() / ".pedalboard"))
+
+
+def migrate_home() -> None:
+    """Move state from ``~/.pedalboard-effects`` (the repo's old name) to ``~/.pedalboard``.
+
+    Nothing already in the new folder is overwritten - v1 kept a ``presets/``
+    folder there, which v2 still leaves alone - and the old folder is removed
+    once it is empty. Does nothing when ``PEDALFX_HOME`` is set.
+    """
+    if "PEDALFX_HOME" in os.environ:
+        return
+    old, new = Path.home() / ".pedalboard-effects", Path.home() / ".pedalboard"
+    if not old.is_dir():
+        return
+    try:
+        new.mkdir(parents=True, exist_ok=True)
+        for item in old.iterdir():
+            if not (new / item.name).exists():
+                item.rename(new / item.name)
+        if not any(old.iterdir()):
+            old.rmdir()
+    except OSError:
+        pass   # read-only home, a file in the way: keep going with whatever is there
 
 
 def boards_dir() -> Path:
@@ -126,6 +149,8 @@ class PresetStore:
     """Factory boards plus the user's boards (``boards/*.json`` in the repo)."""
 
     def __init__(self, root: Path | None = None):
+        if not root:
+            migrate_home()
         self.root = Path(root) if root else app_dir()
         self.boards_dir = self.root / "boards" if root else boards_dir()
         self.session_path = self.root / "session.json"
@@ -133,7 +158,7 @@ class PresetStore:
             self._adopt_home_boards()
 
     def _adopt_home_boards(self) -> None:
-        """Copy boards saved by earlier versions in ``~/.pedalboard-effects/boards``."""
+        """Copy boards saved by earlier versions in ``~/.pedalboard/boards``."""
         legacy = self.root / "boards"
         if legacy == self.boards_dir or not legacy.is_dir():
             return

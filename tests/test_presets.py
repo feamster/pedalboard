@@ -89,3 +89,26 @@ def test_boards_default_to_the_repository_and_adopt_old_ones(tmp_path, monkeypat
 
     monkeypatch.setenv("PEDALFX_HOME", str(tmp_path / "custom"))
     assert presets.boards_dir() == tmp_path / "custom" / "boards"
+
+
+def test_state_moves_from_the_old_home_folder_without_overwriting(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from pedalfx import presets
+
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    monkeypatch.delenv("PEDALFX_HOME", raising=False)
+    old, new = tmp_path / ".pedalboard-effects", tmp_path / ".pedalboard"
+    old.mkdir()
+    (old / "session.json").write_text('{"preset": "Mine"}')
+    (new / "presets").mkdir(parents=True)                 # a v1 folder already there
+    (new / "presets" / "v1.json").write_text("{}")
+    presets.migrate_home()
+    assert (new / "session.json").read_text() == '{"preset": "Mine"}'
+    assert (new / "presets" / "v1.json").exists() and not old.exists()
+
+    old.mkdir()                                           # a stale copy must not clobber newer state
+    (old / "session.json").write_text('{"preset": "Stale"}')
+    presets.migrate_home()
+    assert (new / "session.json").read_text() == '{"preset": "Mine"}' and old.exists()
+    assert presets.app_dir() == new

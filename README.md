@@ -197,7 +197,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit and how 
 
 Boards you save are JSON files in [`boards/`](boards/) in this repository, one per preset —
 commit and push them to back them up or move them to another machine. The last session (audio
-devices, the board as you left it) is per-machine, in `~/.pedalboard-effects/session.json`.
+devices, the board as you left it) is per-machine, in `~/.pedalboard/session.json`.
 Setting the `PEDALFX_HOME` environment variable moves both into that folder instead.
 
 ## License

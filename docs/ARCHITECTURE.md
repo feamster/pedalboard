@@ -121,4 +121,6 @@ from `make_pedal_widget`.
 ```
 
 Unknown pedal types and parameters are skipped on load, and values are clamped to their ranges.
-The v1 app kept its presets in `~/.pedalboard/presets/` with a different schema; v2 neither reads nor modifies that folder.
+The v1 app kept its presets in `~/.pedalboard/presets/` with a different schema; v2 neither reads nor modifies that subfolder.
+v2's own state (`session.json`) sits next to it in `~/.pedalboard/`. It lived in `~/.pedalboard-effects/` until the
+repository was renamed; `presets.migrate_home()` moves it across on first run.
