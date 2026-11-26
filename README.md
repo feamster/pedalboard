@@ -9,16 +9,15 @@ you stomp, and pedals you drag around to re-wire the signal chain.
 ## Quick start
 
 ```bash
-pip install -r requirements.txt
-python src/main.py
+git clone git@github.com:feamster/pedalboard.git && cd pedalboard
+./install.sh
+pedalboard
 ```
 
-To start it from anywhere by typing `pedalboard`, link the launcher onto your PATH once
-(it builds its own virtualenv on first run):
-
-```bash
-ln -sf "$(pwd)/bin/pedalboard" ~/.local/bin/pedalboard
-```
+`install.sh` builds the virtualenv and links the launcher into `~/.local/bin`, so `pedalboard`
+works from any terminal. It is safe to run again, and all the link amounts to is
+`ln -sf "$(pwd)/bin/pedalboard" ~/.local/bin/pedalboard`. To run without installing:
+`pip install -r requirements.txt && python src/main.py`.
 
 The window opens and the terminal prompt comes straight back; anything the app prints goes to
 `~/.pedalboard/last-run.log`. `pedalboard --fg` keeps it attached to the terminal instead.

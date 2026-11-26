@@ -15,7 +15,7 @@ internals, preset format).
 - Look and behave like hardware: painted stompboxes, drag to re-wire, knobs you turn, footswitches.
 - Usable without the mouse, so a foot controller that types keys can run a set.
 - Audition without a guitar (built-in demo riff, or an audio file).
-- `pedalboard` on the PATH starts it from anywhere (`bin/pedalboard`, linked into `~/.local/bin`).
+- `pedalboard` on the PATH starts it from anywhere (`bin/pedalboard`, linked into `~/.local/bin` by `install.sh`).
 - Boards are saved in the repository (`boards/*.json`) and travel with the code.
 
 ## 2. What is built (v2.1)
