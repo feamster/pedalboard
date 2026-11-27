@@ -70,22 +70,42 @@ def test_session_round_trip(tmp_path):
     assert store.load_session() == {"preset": "X", "master_db": -3.0}
 
 
-def test_boards_default_to_the_repository_and_adopt_old_ones(tmp_path, monkeypatch):
+def test_boards_live_in_the_presets_repo_get_history_and_old_ones_move_in(tmp_path, monkeypatch):
+    import subprocess
+
     import pedalfx.presets as presets
 
-    assert presets.REPO_BOARDS.name == "boards" and (presets.REPO_BOARDS.parent / "src").is_dir()
-    repo_boards, home = tmp_path / "repo" / "boards", tmp_path / "home"
-    (home / "boards").mkdir(parents=True)
-    (home / "boards" / "old.json").write_text('{"name": "Old", "pedals": []}')
+    old_repo_boards, home, shared = tmp_path / "repo" / "boards", tmp_path / "home", tmp_path / "gear-presets"
+    for folder, name in ((home / "boards", "Old"), (old_repo_boards, "Older")):
+        folder.mkdir(parents=True)
+        (folder / f"{name.lower()}.json").write_text(json.dumps({"name": name, "pedals": []}))
     monkeypatch.delenv("PEDALFX_HOME", raising=False)
-    monkeypatch.setattr(presets, "REPO_BOARDS", repo_boards)
+    monkeypatch.setenv("GEAR_PRESETS", str(shared))
+    monkeypatch.setattr(presets, "REPO_BOARDS", old_repo_boards)
     monkeypatch.setattr(presets.Path, "home", classmethod(lambda cls: tmp_path / "nowhere"))
     monkeypatch.setattr(presets, "app_dir", lambda: home)
+
+    # no presets checkout on this machine: boards stay in the per-machine folder
+    assert presets.boards_dir() == home / "boards"
+    assert presets.PresetStore().user_names() == ["Old", "Older"] and not list(old_repo_boards.glob("*.json"))
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(shared), *args], capture_output=True, text=True)
+    shared.mkdir()
+    git("init", "-q")
+    git("config", "user.email", "test@example.com")
+    git("config", "user.name", "Test")
     store = presets.PresetStore()
-    assert store.boards_dir == repo_boards and store.session_path == home / "session.json"
-    assert store.user_names() == ["Old"]             # copied over from the old location
+    assert store.boards_dir == shared / "pedalboard" and store.session_path == home / "session.json"
+    assert store.user_names() == ["Old", "Older"] and not list((home / "boards").glob("*.json"))
+    assert git("log", "-1", "--format=%s").stdout.strip() == "Bring in boards saved before the presets repo"
+
     store.save({"name": "New One", "pedals": []})
-    assert (repo_boards / "new-one.json").exists()
+    assert (shared / "pedalboard" / "new-one.json").exists()
+    assert git("log", "-1", "--format=%s").stdout.strip() == "Save board: New One"
+    assert store.delete("New One")
+    assert git("log", "-1", "--format=%s").stdout.strip() == "Delete board: New One"
+    assert git("status", "--porcelain").stdout == ""
 
     monkeypatch.setenv("PEDALFX_HOME", str(tmp_path / "custom"))
     assert presets.boards_dir() == tmp_path / "custom" / "boards"

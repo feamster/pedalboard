@@ -186,7 +186,6 @@ src/
     ui/                 PyQt6 widgets, all custom painted
 tests/                  pytest suite (DSP, engine, presets, UI)
 docs/                   effect reference and architecture notes
-boards/                 your saved board presets (JSON)
 specs/                  the original v1 feature spec (historical)
 ```
 
@@ -197,10 +196,21 @@ ruff check .
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit and how to add a pedal.
 
-Boards you save are JSON files in [`boards/`](boards/) in this repository, one per preset —
-commit and push them to back them up or move them to another machine. The last session (audio
-devices, the board as you left it) is per-machine, in `~/.pedalboard/session.json`.
-Setting the `PEDALFX_HOME` environment variable moves both into that folder instead.
+### Where your boards are kept
+
+This repo is the app only; boards you save are settings, and live outside it.
+
+| What | Where |
+|---|---|
+| Saved boards (one JSON file each) | `~/src/gear-presets/pedalboard/` |
+| Last session (audio devices, the board as you left it) | `~/.pedalboard/session.json`, per machine |
+
+`gear-presets` is a separate repo checked out **beside this one**; it also holds the
+[synth rack](https://github.com/feamster/synth-rack)'s racks, and its README explains the layout.
+Every save makes a local git commit there, so each board has a history; push it when you want it
+backed up or on another Mac. Without that checkout, boards go to `~/.pedalboard/boards` and move
+over the first time the app starts with it in place. `GEAR_PRESETS=/path` points somewhere else,
+and `PEDALFX_HOME=/path` moves boards and the session into one folder (tests use this).
 
 ## License
 

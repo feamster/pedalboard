@@ -32,7 +32,11 @@ python src/main.py --screenshot out.png   # render the UI without audio
 - The looper is driven by `looper.command(...)` only; never touch its loop state from the UI thread.
 - A new pedal = a `Pedal` subclass plus an entry in `PEDAL_CLASSES` (see docs/ARCHITECTURE.md).
 - The UI thread only writes `pedal.values` / `pedal.enabled`; replace `engine.chain`, never mutate it.
+- Saved boards do not live in this repo: they are in the sibling **`../gear-presets`** repo
+  (`pedalboard/`; read its README, it is shared with synth-rack, whose Pedal Loop loads these
+  boards by name). Saving a board commits it there automatically (local only); don't push that
+  repo unless asked, and never add user boards here.
 - Set `PEDALFX_HOME` to a temp dir when running the app from scripts so the user's saved
-  session in `~/.pedalboard` is not touched. Tests already use `tmp_path`.
+  session in `~/.pedalboard` and their boards are not touched. Tests already use `tmp_path`.
 - Opening a real audio stream in a script makes sound: use the "BlackHole 2ch" device or
   `engine.master_db = -90`.

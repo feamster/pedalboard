@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 from pathlib import Path
 
 from .dsp import pedal_from_dict
@@ -12,7 +13,8 @@ from .dsp import pedal_from_dict
 FORMAT_VERSION = 2
 
 
-REPO_BOARDS = Path(__file__).resolve().parents[2] / "boards"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_BOARDS = REPO_ROOT / "boards"       # where saved boards used to live
 
 
 def app_dir() -> Path:
@@ -43,12 +45,40 @@ def migrate_home() -> None:
         pass   # read-only home, a file in the way: keep going with whatever is there
 
 
+def presets_repo() -> Path:
+    """The checkout that holds saved boards (and the synth rack's racks), kept
+    apart from the code: ``$GEAR_PRESETS``, else ``gear-presets`` beside this repo."""
+    return Path(os.environ.get("GEAR_PRESETS") or REPO_ROOT.parent / "gear-presets").expanduser()
+
+
 def boards_dir() -> Path:
-    """Where saved boards live: ``boards/`` in the repository, so they are
-    versioned and pushed with the code. ``PEDALFX_HOME`` moves them too."""
+    """Where saved boards live: ``pedalboard/`` in the presets checkout if this
+    machine has one, else ``~/.pedalboard/boards``. ``PEDALFX_HOME`` overrides
+    both. The synth rack's Pedal Loop reads boards from here too."""
     if "PEDALFX_HOME" in os.environ:
         return Path(os.environ["PEDALFX_HOME"]) / "boards"
-    return REPO_BOARDS
+    repo = presets_repo()
+    return repo / "pedalboard" if repo.is_dir() else app_dir() / "boards"
+
+
+def git_commit(paths, message: str) -> bool:
+    """Record a change to saved files when their folder is a git checkout, so
+    boards get history without anyone touching git. Local only; never pushes.
+    Quietly does nothing anywhere else, or if git is missing or unhappy."""
+    paths = [Path(p) for p in paths]
+    if not paths:
+        return False
+    folder = paths[0].parent
+    try:
+        def git(*args):
+            return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, timeout=10)
+        if git("rev-parse", "--is-inside-work-tree").returncode != 0:
+            return False
+        names = [str(p) for p in paths]
+        git("add", "-A", "--", *names)
+        return git("commit", "-q", "-m", message, "--", *names).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def _p(type_name: str, enabled: bool = True, **params) -> dict:
@@ -146,7 +176,7 @@ def _slug(name: str) -> str:
 
 
 class PresetStore:
-    """Factory boards plus the user's boards (``boards/*.json`` in the repo)."""
+    """Factory boards plus the user's boards (see ``boards_dir``), and the session."""
 
     def __init__(self, root: Path | None = None):
         if not root:
@@ -154,19 +184,31 @@ class PresetStore:
         self.root = Path(root) if root else app_dir()
         self.boards_dir = self.root / "boards" if root else boards_dir()
         self.session_path = self.root / "session.json"
-        if not root:
-            self._adopt_home_boards()
+        if not root and "PEDALFX_HOME" not in os.environ:
+            self.adopt_boards(REPO_BOARDS, self.root / "boards")
 
-    def _adopt_home_boards(self) -> None:
-        """Copy boards saved by earlier versions in ``~/.pedalboard/boards``."""
-        legacy = self.root / "boards"
-        if legacy == self.boards_dir or not legacy.is_dir():
-            return
-        for path in legacy.glob("*.json"):
-            target = self.boards_dir / path.name
-            if not target.exists():
-                self.boards_dir.mkdir(parents=True, exist_ok=True)
-                target.write_text(path.read_text())
+    def adopt_boards(self, *legacy: Path) -> list:
+        """Move boards saved where earlier versions kept them (``boards/`` in
+        this repository, ``~/.pedalboard/boards``) into ``boards_dir``. A board
+        that is already there is left alone. Returns the files that arrived."""
+        moved = []
+        for folder in legacy:
+            if folder == self.boards_dir or not folder.is_dir():
+                continue
+            for path in sorted(folder.glob("*.json")):
+                target = self.boards_dir / path.name
+                if target.exists():
+                    continue
+                try:
+                    self.boards_dir.mkdir(parents=True, exist_ok=True)
+                    target.write_text(path.read_text())
+                    path.unlink()
+                    moved.append(target)
+                except OSError:
+                    continue
+        if moved:
+            git_commit(moved, "Bring in boards saved before the presets repo")
+        return moved
 
     # boards ----------------------------------------------------------
     def _user_boards(self) -> dict:
@@ -201,13 +243,15 @@ class PresetStore:
     def save(self, board: dict) -> Path:
         self.boards_dir.mkdir(parents=True, exist_ok=True)
         path = self.boards_dir / f"{_slug(board['name'])}.json"
-        path.write_text(json.dumps(board, indent=2))
+        path.write_text(json.dumps(board, indent=2) + "\n")
+        git_commit([path], f"Save board: {board['name']}")
         return path
 
     def delete(self, name: str) -> bool:
         path = self.boards_dir / f"{_slug(name)}.json"
         if path.exists():
             path.unlink()
+            git_commit([path], f"Delete board: {name}")
             return True
         return False
 

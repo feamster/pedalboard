@@ -16,7 +16,10 @@ internals, preset format).
 - Usable without the mouse, so a foot controller that types keys can run a set.
 - Audition without a guitar (built-in demo riff, or an audio file).
 - `pedalboard` on the PATH starts it from anywhere (`bin/pedalboard`, linked into `~/.local/bin` by `install.sh`).
-- Boards are saved in the repository (`boards/*.json`) and travel with the code.
+- Boards are saved outside this repository, in the shared presets repo: `pedalboard/` in
+  `$GEAR_PRESETS`, else `../gear-presets` (its README describes it); without that checkout,
+  `~/.pedalboard/boards`. Each save or delete makes a local git commit there (`presets.git_commit`).
+  Boards left in this repo's old `boards/` folder or in `~/.pedalboard/boards` are moved in on start.
 
 ## 2. What is built (v2.1)
 
@@ -26,7 +29,7 @@ internals, preset format).
 | Board | Up to 12 pedals in a left-to-right chain; drag to reorder, drag off to remove; 12 finishes; 4 board skins |
 | Sources | Live input (device + channel), demo riff, looping audio file |
 | Audio | Device / sample rate / buffer settings, input and master gain, meters, soft-clipped output |
-| Presets | 8 factory boards (never overwritten), user boards in `boards/`, session restore |
+| Presets | 8 factory boards (never overwritten), user boards in the presets repo, session restore |
 | Control | Keyboard / foot-controller navigation; looper letter keys |
 
 ## 3. Rules
@@ -48,7 +51,7 @@ board on audio from the rack. It treats this repo as read-only. It relies on:
 | What | Where | Contract |
 |---|---|---|
 | Package location | `src/pedalfx/` next to synth-rack (`../pedalboard`; the old name `../pedalboard-effects` is still found) | `pedalfx.dsp` and `pedalfx.presets` import without Qt |
-| Boards | `boards/*.json`, `presets.FACTORY_BOARDS` | each has `name` and `pedals` |
+| Boards | `presets.boards_dir()` (`*.json` there), `presets.FACTORY_BOARDS` | each has `name` and `pedals`; synth-rack calls `boards_dir()` so both apps agree on the folder |
 | Building a chain | `presets.pedals_from_board(data, sr)` | returns `Pedal` objects; unknown types skipped |
 | Running it | `pedal.process(x)` with float32 `(2, n)`, `pedal.enabled`, `pedal.set_sample_rate(sr)` | state kept between blocks |
 | Display | `pedal.TYPE`, `pedal.NAME`, `pedal.finish` / `pedal.FINISH` | finish names as in `ui/theme.FINISHES` |
